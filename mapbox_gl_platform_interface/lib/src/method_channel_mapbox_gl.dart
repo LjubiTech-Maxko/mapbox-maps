@@ -37,6 +37,7 @@ class MethodChannelMapboxGl extends MapboxGlPlatform {
 
         final double deltaLat = call.arguments['deltaLat'];
         final double deltaLng = call.arguments['deltaLng'];
+        final String eventType = call.arguments['eventType'];
 
         onFeatureDraggedPlatform({
           'id': id,
@@ -44,6 +45,7 @@ class MethodChannelMapboxGl extends MapboxGlPlatform {
           'origin': LatLng(originLat, originLng),
           'current': LatLng(currentLat, currentLng),
           'delta': LatLng(deltaLat, deltaLng),
+          'eventType': eventType,
         });
         break;
 
@@ -547,6 +549,16 @@ class MethodChannelMapboxGl extends MapboxGlPlatform {
     try {
       return await _channel.invokeMethod(
           'style#removeLayer', <String, Object>{'layerId': layerId});
+    } on PlatformException catch (e) {
+      return new Future.error(e);
+    }
+  }
+
+  @override
+  Future<void> setFilter(String layerId, dynamic filter) async {
+    try {
+      return await _channel.invokeMethod('style#setFilter',
+          <String, Object>{'layerId': layerId, 'filter': jsonEncode(filter)});
     } on PlatformException catch (e) {
       return new Future.error(e);
     }

@@ -27,6 +27,7 @@ import androidx.lifecycle.LifecycleOwner;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import com.mapbox.android.core.location.LocationEngine;
 import com.mapbox.android.core.location.LocationEngineCallback;
 import com.mapbox.android.core.location.LocationEngineProvider;
@@ -59,7 +60,9 @@ import com.mapbox.mapboxsdk.offline.OfflineManager;
 import com.mapbox.mapboxsdk.plugins.localization.LocalizationPlugin;
 import com.mapbox.mapboxsdk.style.expressions.Expression;
 import com.mapbox.mapboxsdk.style.layers.CircleLayer;
+import com.mapbox.mapboxsdk.style.layers.FillExtrusionLayer;
 import com.mapbox.mapboxsdk.style.layers.FillLayer;
+import com.mapbox.mapboxsdk.style.layers.HeatmapLayer;
 import com.mapbox.mapboxsdk.style.layers.HillshadeLayer;
 import com.mapbox.mapboxsdk.style.layers.Layer;
 import com.mapbox.mapboxsdk.style.layers.LineLayer;
@@ -113,6 +116,9 @@ final class MapboxMapController
   private final int id;
   private final MethodChannel methodChannel;
   private final MapboxMapsPlugin.LifecycleProvider lifecycleProvider;
+  private final float density;
+  private final Context context;
+  private final String styleStringInitial;
   private MapView mapView;
   private MapboxMap mapboxMap;
   private boolean trackCameraPosition = false;
@@ -121,10 +127,7 @@ final class MapboxMapController
   private int myLocationRenderMode = 0;
   private boolean disposed = false;
   private boolean dragEnabled = true;
-  private final float density;
   private MethodChannel.Result mapReadyResult;
-  private final Context context;
-  private final String styleStringInitial;
   private LocationComponent locationComponent = null;
   private LocationEngine locationEngine = null;
   private LocationEngineCallback<LocationEngineResult> locationEngineCallback = null;
@@ -140,6 +143,25 @@ final class MapboxMapController
   private Map<String, FeatureCollection> addedFeaturesByLayer;
 
   private LatLngBounds bounds = null;
+  Style.OnStyleLoaded onStyleLoadedCallback =
+      new Style.OnStyleLoaded() {
+        @Override
+        public void onStyleLoaded(@NonNull Style style) {
+          MapboxMapController.this.style = style;
+
+          updateMyLocationEnabled();
+
+          if (null != bounds) {
+            mapboxMap.setLatLngBoundsForCameraTarget(bounds);
+          }
+
+          mapboxMap.addOnMapClickListener(MapboxMapController.this);
+          mapboxMap.addOnMapLongClickListener(MapboxMapController.this);
+          localizationPlugin = new LocalizationPlugin(mapView, mapboxMap, style);
+
+          methodChannel.invokeMethod("map#onStyleLoaded", null);
+        }
+      };
 
   MapboxMapController(
       int id,
@@ -259,26 +281,6 @@ final class MapboxMapController
       mapboxMap.setStyle(new Style.Builder().fromUri(styleString), onStyleLoadedCallback);
     }
   }
-
-  Style.OnStyleLoaded onStyleLoadedCallback =
-      new Style.OnStyleLoaded() {
-        @Override
-        public void onStyleLoaded(@NonNull Style style) {
-          MapboxMapController.this.style = style;
-
-          updateMyLocationEnabled();
-
-          if (null != bounds) {
-            mapboxMap.setLatLngBoundsForCameraTarget(bounds);
-          }
-
-          mapboxMap.addOnMapClickListener(MapboxMapController.this);
-          mapboxMap.addOnMapLongClickListener(MapboxMapController.this);
-          localizationPlugin = new LocalizationPlugin(mapView, mapboxMap, style);
-
-          methodChannel.invokeMethod("map#onStyleLoaded", null);
-        }
-      };
 
   @SuppressWarnings({"MissingPermission"})
   private void enableLocationComponent(@NonNull Style style) {
@@ -1271,6 +1273,46 @@ final class MapboxMapController
           result.success(null);
           break;
         }
+      case "style#setFilter":
+        {
+          if (style == null) {
+            result.error(
+                "STYLE IS NULL",
+                "The style is null. Has onStyleLoaded() already been invoked?",
+                null);
+          }
+          String layerId = call.argument("layerId");
+          String filter = call.argument("filter");
+
+          Layer layer = style.getLayer(layerId);
+
+          JsonParser parser = new JsonParser();
+          JsonElement jsonElement = parser.parse(filter);
+          Expression expression = Expression.Converter.convert(jsonElement);
+
+          if (layer instanceof CircleLayer) {
+            ((CircleLayer) layer).setFilter(expression);
+          } else if (layer instanceof FillExtrusionLayer) {
+            ((FillExtrusionLayer) layer).setFilter(expression);
+          } else if (layer instanceof FillLayer) {
+            ((FillLayer) layer).setFilter(expression);
+          } else if (layer instanceof HeatmapLayer) {
+            ((HeatmapLayer) layer).setFilter(expression);
+          } else if (layer instanceof LineLayer) {
+            ((LineLayer) layer).setFilter(expression);
+          } else if (layer instanceof SymbolLayer) {
+            ((SymbolLayer) layer).setFilter(expression);
+          } else {
+            result.error(
+                "INVALID LAYER TYPE",
+                String.format("Layer '%s' does not support filtering.", layerId),
+                null);
+            break;
+          }
+
+          result.success(null);
+          break;
+        }
       default:
         result.notImplemented();
     }
@@ -1775,15 +1817,6 @@ final class MapboxMapController
     return bitmap;
   }
 
-  /** Simple Listener to listen for the status of camera movements. */
-  public class OnCameraMoveFinishedListener implements MapboxMap.CancelableCallback {
-    @Override
-    public void onFinish() {}
-
-    @Override
-    public void onCancel() {}
-  }
-
   boolean onMoveBegin(MoveGestureDetector detector) {
     // onMoveBegin gets called even during a move - move end is also not called unless this function
     // returns
@@ -1796,10 +1829,29 @@ final class MapboxMapController
       RectF rectF = new RectF(pointf.x - 10, pointf.y - 10, pointf.x + 10, pointf.y + 10);
       Feature feature = firstFeatureOnLayers(rectF);
       if (feature != null && startDragging(feature, origin)) {
+        invokeFeatureDrag(pointf, "start");
         return true;
       }
     }
     return false;
+  }
+
+  private void invokeFeatureDrag(PointF pointf, String eventType) {
+    LatLng current = mapboxMap.getProjection().fromScreenLocation(pointf);
+
+    final Map<String, Object> arguments = new HashMap<>(9);
+    arguments.put("id", draggedFeature.id());
+    arguments.put("x", pointf.x);
+    arguments.put("y", pointf.y);
+    arguments.put("originLng", dragOrigin.getLongitude());
+    arguments.put("originLat", dragOrigin.getLatitude());
+    arguments.put("currentLng", current.getLongitude());
+    arguments.put("currentLat", current.getLatitude());
+    arguments.put("eventType", eventType);
+    arguments.put("deltaLng", current.getLongitude() - dragPrevious.getLongitude());
+    arguments.put("deltaLat", current.getLatitude() - dragPrevious.getLatitude());
+    dragPrevious = current;
+    methodChannel.invokeMethod("feature#onDrag", arguments);
   }
 
   boolean onMove(MoveGestureDetector detector) {
@@ -1808,30 +1860,16 @@ final class MapboxMapController
         stopDragging();
         return true;
       }
-
       PointF pointf = detector.getFocalPoint();
-      LatLng current = mapboxMap.getProjection().fromScreenLocation(pointf);
-
-      final Map<String, Object> arguments = new HashMap<>(9);
-      arguments.put("id", draggedFeature.id());
-      arguments.put("x", pointf.x);
-      arguments.put("y", pointf.y);
-
-      arguments.put("originLng", dragOrigin.getLongitude());
-      arguments.put("originLat", dragOrigin.getLatitude());
-      arguments.put("currentLng", current.getLongitude());
-      arguments.put("currentLat", current.getLatitude());
-      arguments.put("deltaLng", current.getLongitude() - dragPrevious.getLongitude());
-      arguments.put("deltaLat", current.getLatitude() - dragPrevious.getLatitude());
-
-      methodChannel.invokeMethod("feature#onDrag", arguments);
-      dragPrevious = current;
+      invokeFeatureDrag(pointf, "drag");
       return false;
     }
     return true;
   }
 
-  void onMoveEnd() {
+  void onMoveEnd(MoveGestureDetector detector) {
+    PointF pointf = detector.getFocalPoint();
+    invokeFeatureDrag(pointf, "end");
     stopDragging();
   }
 
@@ -1855,6 +1893,15 @@ final class MapboxMapController
     dragPrevious = null;
   }
 
+  /** Simple Listener to listen for the status of camera movements. */
+  public class OnCameraMoveFinishedListener implements MapboxMap.CancelableCallback {
+    @Override
+    public void onFinish() {}
+
+    @Override
+    public void onCancel() {}
+  }
+
   private class MoveGestureListener implements MoveGestureDetector.OnMoveGestureListener {
 
     @Override
@@ -1869,7 +1916,7 @@ final class MapboxMapController
 
     @Override
     public void onMoveEnd(MoveGestureDetector detector, float velocityX, float velocityY) {
-      MapboxMapController.this.onMoveEnd();
+      MapboxMapController.this.onMoveEnd(detector);
     }
   }
 }

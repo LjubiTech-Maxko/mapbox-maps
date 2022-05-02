@@ -107,10 +107,36 @@ class MapboxWebGlPlatform extends MapboxGlPlatform
       _map.getCanvas().style.cursor = 'grabbing';
       var coords = e.lngLat;
       _dragOrigin = LatLng(coords.lat as double, coords.lng as double);
+
+      if (_draggedFeatureId != null) {
+        final current =
+            LatLng(e.lngLat.lat.toDouble(), e.lngLat.lng.toDouble());
+        final payload = {
+          'id': _draggedFeatureId,
+          'point': Point<double>(e.point.x.toDouble(), e.point.y.toDouble()),
+          'origin': _dragOrigin,
+          'current': current,
+          'delta': LatLng(0, 0),
+          'eventType': 'start'
+        };
+        onFeatureDraggedPlatform(payload);
+      }
     }
   }
 
   _onMouseUp(Event e) {
+    if (_draggedFeatureId != null) {
+      final current = LatLng(e.lngLat.lat.toDouble(), e.lngLat.lng.toDouble());
+      final payload = {
+        'id': _draggedFeatureId,
+        'point': Point<double>(e.point.x.toDouble(), e.point.y.toDouble()),
+        'origin': _dragOrigin,
+        'current': current,
+        'delta': current - (_dragPrevious ?? _dragOrigin!),
+        'eventType': 'end'
+      };
+      onFeatureDraggedPlatform(payload);
+    }
     _draggedFeatureId = null;
     _dragPrevious = null;
     _dragOrigin = null;
@@ -126,6 +152,7 @@ class MapboxWebGlPlatform extends MapboxGlPlatform
         'origin': _dragOrigin,
         'current': current,
         'delta': current - (_dragPrevious ?? _dragOrigin!),
+        'eventType': 'drag'
       };
       _dragPrevious = current;
       onFeatureDraggedPlatform(payload);
@@ -627,6 +654,11 @@ class MapboxWebGlPlatform extends MapboxGlPlatform
   Future<void> removeLayer(String layerId) async {
     _interactiveFeatureLayerIds.remove(layerId);
     _map.removeLayer(layerId);
+  }
+
+  @override
+  Future<void> setFilter(String layerId, dynamic filter) async {
+    _map.setFilter(layerId, filter);
   }
 
   @override
