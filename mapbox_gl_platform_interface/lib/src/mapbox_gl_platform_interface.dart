@@ -45,20 +45,32 @@ abstract class MapboxGlPlatform {
 
   final onUserLocationUpdatedPlatform = ArgumentCallbacks<UserLocation>();
 
+  /// MAXKO! ///
+  Future<bool?> animateCamera(CameraUpdate cameraUpdate, int duration);
+  Future<void> changeLayerLanguage(String layerId, String language);
+  Future<void> setLayerVisibility(String layerName, bool visible);
+  Future<bool?> toggleAttributionVisibility(bool visible);
+  Future<void> toggleNavigationIcon(bool enabled);
+  Future<bool?> updateContentInsets(EdgeInsets insets, int? duration);
+  Future<void> updateMyLocationRenderMode(MyLocationRenderMode myLocationRenderMode);
+  Future<String?> getlayer(String layerName);
+  Future<void> changeLineLayerColor(String layerName, Color color);
+  Future<double> getClusterExpansionZoom(String sourceId, String encodedCluster);
+  Future<Map<String, dynamic>?> queryRentBikeClusters(Point clickedPoint, String sourceId, List<String> layerIds);
+  /// MAXKO! ///
+
   Future<void> initPlatform(int id);
   Widget buildView(
       Map<String, dynamic> creationParams,
       OnPlatformViewCreatedCallback onPlatformViewCreated,
       Set<Factory<OneSequenceGestureRecognizer>>? gestureRecognizers);
   Future<CameraPosition?> updateMapOptions(Map<String, dynamic> optionsUpdate);
-  Future<bool?> animateCamera(CameraUpdate cameraUpdate);
   Future<bool?> moveCamera(CameraUpdate cameraUpdate);
   Future<void> updateMyLocationTrackingMode(
       MyLocationTrackingMode myLocationTrackingMode);
 
   Future<void> matchMapLanguageWithDeviceDefault();
 
-  Future<void> updateContentInsets(EdgeInsets insets, bool animated);
   Future<void> setMapLanguage(String language);
   Future<void> setTelemetryEnabled(bool enabled);
 
@@ -67,7 +79,7 @@ abstract class MapboxGlPlatform {
       Point<double> point, List<String> layerIds, List<Object>? filter);
 
   Future<List> queryRenderedFeaturesInRect(
-      Rect rect, List<String> layerIds, String? filter);
+      Rect rect, List<String> layerIds, List<Object>? filter);
   Future invalidateAmbientCache();
   Future<LatLng?> requestMyLocationLatLng();
 

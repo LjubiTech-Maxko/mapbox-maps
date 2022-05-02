@@ -242,6 +242,55 @@ class MapboxMapController extends ChangeNotifier {
 
   final MapboxGlPlatform _mapboxGlPlatform; //ignore: unused_field
 
+  /// MAXKO ///
+  Future<bool?> animateCamera(CameraUpdate cameraUpdate, int duration) async {
+    return _mapboxGlPlatform.animateCamera(cameraUpdate, duration);
+  }
+
+  Future<void> changeLayerLanguage(String layerName, String language) {
+    return _mapboxGlPlatform.changeLayerLanguage(layerName, language);
+  }
+
+  Future<void> setLayerVisibility(String layerName, bool visible) {
+    return _mapboxGlPlatform.setLayerVisibility(layerName, visible);
+  }
+
+  Future<void> toggleNavigationIcon(bool enabled) async {
+    return _mapboxGlPlatform.toggleNavigationIcon(enabled);
+  }
+
+  Future<bool?> updateContentInsets(EdgeInsets insets,
+      [int? duration]) async {
+    return _mapboxGlPlatform.updateContentInsets(insets, duration);
+  }
+
+  Future<void> updateMyLocationRenderMode(
+      MyLocationRenderMode myLocationRenderMode) async {
+    return _mapboxGlPlatform.updateMyLocationRenderMode(myLocationRenderMode);
+  }
+
+  Future<String?> getLayer(String layerName) async {
+    return await _mapboxGlPlatform.getlayer(layerName);
+  }
+
+  Future<void> changeLineLayerColor(String layerName, Color color) async {
+    return await _mapboxGlPlatform.changeLineLayerColor(layerName, color);
+  }
+
+  Future<double> getClusterExpansionZoom(String sourceId, String encodedCluster) async {
+    return await _mapboxGlPlatform.getClusterExpansionZoom(sourceId, encodedCluster);
+  }
+
+  /// returns {
+  ///     'bikeIds': [7, 77,..] || [],
+  ///     'zoom': double,
+  ///     'centerCoords': [lon, lat] || null => when this is null we should use bike coordinates for zoom!
+  /// } || null
+  Future<Map<String, dynamic>?> queryRentBikeClusters(Point clickedPoint, String sourceId, List<String> layerIds) async {
+    return await _mapboxGlPlatform.queryRentBikeClusters(clickedPoint, sourceId, layerIds);
+  }
+  /// MAXKO! ///
+
   /// Updates configuration options of the map user interface.
   ///
   /// Change listeners are notified once the update has been made on the
@@ -251,16 +300,6 @@ class MapboxMapController extends ChangeNotifier {
   Future<void> _updateMapOptions(Map<String, dynamic> optionsUpdate) async {
     _cameraPosition = await _mapboxGlPlatform.updateMapOptions(optionsUpdate);
     notifyListeners();
-  }
-
-  /// Starts an animated change of the map camera position.
-  ///
-  /// The returned [Future] completes after the change has been started on the
-  /// platform side.
-  /// It returns true if the camera was successfully moved and false if the movement was canceled.
-  /// Note: this currently always returns immediately with a value of null on iOS
-  Future<bool?> animateCamera(CameraUpdate cameraUpdate) async {
-    return _mapboxGlPlatform.animateCamera(cameraUpdate);
   }
 
   /// Instantaneously re-position the camera.
@@ -515,22 +554,6 @@ class MapboxMapController extends ChangeNotifier {
   /// platform side.
   Future<void> matchMapLanguageWithDeviceDefault() async {
     return _mapboxGlPlatform.matchMapLanguageWithDeviceDefault();
-  }
-
-  /// Updates the distance from the edges of the map view’s frame to the edges
-  /// of the map view’s logical viewport, optionally animating the change.
-  ///
-  /// When the value of this property is equal to `EdgeInsets.zero`, viewport
-  /// properties such as centerCoordinate assume a viewport that matches the map
-  /// view’s frame. Otherwise, those properties are inset, excluding part of the
-  /// frame from the viewport. For instance, if the only the top edge is inset,
-  /// the map center is effectively shifted downward.
-  ///
-  /// The returned [Future] completes after the change has been made on the
-  /// platform side.
-  Future<void> updateContentInsets(EdgeInsets insets,
-      [bool animated = false]) async {
-    return _mapboxGlPlatform.updateContentInsets(insets, animated);
   }
 
   /// Updates the language of the map labels to match the specified language.
@@ -931,7 +954,7 @@ class MapboxMapController extends ChangeNotifier {
 
   /// Query rendered features in a Rect in screen coordinates
   Future<List> queryRenderedFeaturesInRect(
-      Rect rect, List<String> layerIds, String? filter) async {
+      Rect rect, List<String> layerIds, List<Object>? filter) async {
     return _mapboxGlPlatform.queryRenderedFeaturesInRect(
         rect, layerIds, filter);
   }

@@ -83,6 +83,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/// MAXKO ///
+import android.graphics.Color;
+import com.mapbox.geojson.Point;
+import com.mapbox.mapboxsdk.location.LocationComponentActivationOptions;
+import com.mapbox.mapboxsdk.http.HttpLogger;
+import com.mapbox.mapboxsdk.style.layers.Property;
+import com.mapbox.mapboxsdk.style.layers.PropertyFactory;
+import static com.mapbox.mapboxsdk.style.layers.Property.NONE;
+import static com.mapbox.mapboxsdk.style.layers.Property.VISIBLE;
+/// MAXKO! ///
+
 /** Controller of a single MapboxMaps MapView instance. */
 @SuppressLint("MissingPermission")
 final class MapboxMapController
@@ -173,7 +184,7 @@ final class MapboxMapController
 
   private void animateCamera(CameraUpdate cameraUpdate) {
     mapboxMap.animateCamera(cameraUpdate);
-  }
+  };
 
   private CameraPosition getCameraPosition() {
     return trackCameraPosition ? mapboxMap.getCameraPosition() : null;
@@ -213,6 +224,13 @@ final class MapboxMapController
         });
 
     mapView.addOnDidBecomeIdleListener(this);
+
+    /// MAXKO ///
+    /// Disable per default attribution button until clicking copyright is fixed
+    mapboxMap.getUiSettings().setAttributionEnabled(false);
+    /// Disable cluttering log with mapbox getting tiles logs
+    HttpLogger.logEnabled = false;
+    /// MAXKO! ///
 
     setStyleString(styleStringInitial);
   }
@@ -280,6 +298,42 @@ final class MapboxMapController
       Log.e(TAG, "missing location permissions");
     }
   }
+
+  /// MAXKO ///
+  private void toggleNavigationIcon(boolean enabled) {
+    LocationComponentOptions customLocationComponentOptions;
+    if(enabled) {
+      customLocationComponentOptions = LocationComponentOptions.builder(context)
+              .foregroundDrawable(R.drawable.mapbox_navigation_icon)
+              .pulseEnabled(false)
+              .accuracyAlpha(0)
+              .accuracyAnimationEnabled(false)
+              .build();
+    } else {
+      customLocationComponentOptions = LocationComponentOptions.builder(context)
+              .trackingGesturesManagement(true)
+              .build();
+    }
+
+    locationComponent = mapboxMap.getLocationComponent();
+
+    LocationComponentActivationOptions locationComponentActivationOptions =
+            LocationComponentActivationOptions.builder(context, style)
+                    .locationComponentOptions(customLocationComponentOptions)
+                    .build();
+
+    locationComponent.activateLocationComponent(locationComponentActivationOptions);
+    locationComponent.setLocationComponentEnabled(true);
+    locationComponent.setMaxAnimationFps(enabled ? 60 : 30);
+  }
+
+  private double getClusterExpansionZoom(String sourceId, Feature feature) {
+    final GeoJsonSource source = style.getSourceAs(sourceId);
+    if(source == null)
+      return -1;
+    return (double) source.getClusterExpansionZoom(feature);
+  }
+  /// MAXKO! ///
 
   private void updateLocationComponentLayer() {
     if (locationComponent != null && locationComponentRequiresUpdate()) {
@@ -576,6 +630,130 @@ final class MapboxMapController
   public void onMethodCall(MethodCall call, MethodChannel.Result result) {
 
     switch (call.method) {
+      /// MAXKO ///
+      case "layer#changeLanguage": {
+        Layer poiLayer = style.getLayer(call.argument("layerName"));
+        if(poiLayer == null)
+          result.error("Layer for changing language does not exist!", "", null);
+        String name = "{name_"+call.argument("language")+"}";
+        poiLayer.setProperties(PropertyFactory.textField(name));
+        result.success(null);
+        break;
+      }
+      case "layer#setVisibility": {
+        Layer layer = style.getLayer(call.argument("layerName"));
+        final boolean visible = call.argument("visible");
+        if(layer == null) {
+          result.error("Layer for toggling visibility does not exist!", "", null);
+        } else {
+          if(visible) {
+            layer.setProperties(PropertyFactory.visibility(VISIBLE));
+          } else {
+            layer.setProperties(PropertyFactory.visibility(NONE));
+          }
+          result.success(null);
+        }
+        break;
+      }
+      case "layer#getLayer": {
+        Layer layer = style.getLayer(call.argument("layerName"));
+        if(layer == null)
+          result.success(null);
+        else
+          result.success(layer.getId());
+        break;
+      }
+      case "map#toggleAttributionVisibility": {
+        final boolean visible = call.argument("visible");
+        mapboxMap.getUiSettings().setAttributionEnabled(visible);
+        result.success(visible);
+        break;
+      }
+      case "map#toggleNavigationIcon": {
+        final boolean active = call.argument("enabled");
+        toggleNavigationIcon(active);
+        result.success(null);
+        break;
+      }
+      case "map#updateContentInsets": {
+        final HashMap<String, Object> insets = call.argument("bounds");
+        final Integer duration = call.argument("duration");
+        final CameraUpdate cameraUpdate = CameraUpdateFactory.paddingTo(
+                Convert.toPixels(insets.get("left"), density),
+                Convert.toPixels(insets.get("top"), density),
+                Convert.toPixels(insets.get("right"), density),
+                Convert.toPixels(insets.get("bottom"), density)
+        );
+        if(duration == null) {
+          moveCamera(cameraUpdate, result);
+        } else {
+          animateCamera(cameraUpdate, duration, result);
+        }
+        break;
+      }
+      case "map#updateMyLocationRenderMode": {
+        int myLocationRenderMode = call.argument("mode");
+        setMyLocationRenderMode(myLocationRenderMode);
+        result.success(null);
+        break;
+      }
+      case "layer#changeLineColor": {
+        final String layerName = call.argument("layerName");
+        final String color = call.argument("color");
+        LineLayer layer = style.getLayerAs(layerName);
+        layer.setProperties(PropertyFactory.lineColor(Color.parseColor(color)));
+        result.success(null);
+        break;
+      }
+      case "cluster#getExpansionZoom": {
+        final String sourceId = call.argument("sourceId");
+        Feature feature = Feature.fromJson(call.argument("cluster"));
+        final double expansionZoom = getClusterExpansionZoom(sourceId, feature);
+        if(expansionZoom == -1) {
+          result.error("cluster#getExpansionZoom", "zoom == -1", null);
+          return;
+        }
+        result.success(expansionZoom);
+        break;
+      }
+      case "cluster#queryRentBike": {
+        final Map<String, Object> reply = new HashMap<>();
+        final String[] layerIds = ((List<String>) call.argument("layerIds")).toArray(new String[0]);
+        final String sourceId = call.argument("sourceId");
+        final Double x = call.argument("x");
+        final Double y = call.argument("y");
+        final PointF pixel = new PointF(x.floatValue(), y.floatValue());
+        final List<Feature> features = mapboxMap.queryRenderedFeatures(pixel, layerIds);
+        if(features.isEmpty()) {
+          result.success(null);
+          return;
+        }
+        Feature firstFeature = features.get(0);
+        final boolean isClustered = firstFeature.properties().get("cluster") != null;
+        double newZoom;
+        List<Integer> bikeIdsInt = new ArrayList<>();
+        final double maxZoom = mapboxMap.getMaxZoomLevel();
+        if(isClustered) {
+          final double expansionZoom = getClusterExpansionZoom(sourceId, firstFeature);
+          newZoom = Math.min(expansionZoom, maxZoom);
+          if(expansionZoom >= maxZoom) {
+            final String bikeIdsRaw = firstFeature.properties().get("bikeIds").getAsString();
+            final String[] splitIds = bikeIdsRaw.split(",");
+            for(String s : splitIds) bikeIdsInt.add(Integer.valueOf(s));
+          } else {
+            final Point featurePoint = (Point) firstFeature.geometry();
+            reply.put("centerCoords", featurePoint.coordinates());
+          }
+        } else {
+          newZoom = maxZoom;
+          bikeIdsInt.add(Integer.valueOf(firstFeature.id()));
+        }
+        reply.put("bikeIds", bikeIdsInt);
+        reply.put("zoom", newZoom);
+        result.success(reply);
+        break;
+      }
+      /// MAXKO! ///
       case "map#waitForMap":
         if (mapboxMap != null) {
           result.success(null);
@@ -604,23 +782,6 @@ final class MapboxMapController
           } catch (RuntimeException exception) {
             Log.d(TAG, exception.toString());
             result.error("MAPBOX LOCALIZATION PLUGIN ERROR", exception.toString(), null);
-          }
-          break;
-        }
-      case "map#updateContentInsets":
-        {
-          HashMap<String, Object> insets = call.argument("bounds");
-          final CameraUpdate cameraUpdate =
-              CameraUpdateFactory.paddingTo(
-                  Convert.toPixels(insets.get("left"), density),
-                  Convert.toPixels(insets.get("top"), density),
-                  Convert.toPixels(insets.get("right"), density),
-                  Convert.toPixels(insets.get("bottom"), density));
-
-          if (call.argument("animated")) {
-            animateCamera(cameraUpdate, null, result);
-          } else {
-            moveCamera(cameraUpdate, result);
           }
           break;
         }

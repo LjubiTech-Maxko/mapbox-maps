@@ -20,6 +20,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/// MAXKO ///
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
+import com.mapbox.mapboxsdk.style.expressions.Expression;
+/// MAXKO! ///
+
 class SourcePropertyConverter {
   private static final String TAG = "SourcePropertyConverter";
 
@@ -107,6 +114,23 @@ class SourcePropertyConverter {
     if (tolerance != null) {
       options = options.withTolerance(Convert.toFloat(tolerance));
     }
+
+    /// MAXKO ///
+    final Object clusterProperties = data.get("clusterProperties");
+    if(clusterProperties != null) {
+      final JsonParser parser = new JsonParser();
+      final Map<String, Object> clusterPropMap = (Map<String, Object>) Convert.toMap(clusterProperties);
+      for(Map.Entry<String, Object> entry : clusterPropMap.entrySet()) {
+        final List<Object> value = (List<Object>) Convert.toList(entry.getValue());
+        final JsonElement operatorJsonElement = parser.parse(String.valueOf(value.get(0)));
+        Expression operatorExpr = Expression.Converter.convert(operatorJsonElement);
+        final JsonElement mapJsonElement = parser.parse(String.valueOf(value.get(1)));
+        Expression mapExpr = Expression.Converter.convert(mapJsonElement);
+        options = options.withClusterProperty(entry.getKey(), operatorExpr, mapExpr);
+      }
+    }
+    /// MAXKO! ///
+
     return options;
   }
 

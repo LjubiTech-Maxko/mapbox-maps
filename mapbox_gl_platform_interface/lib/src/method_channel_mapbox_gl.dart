@@ -196,6 +196,106 @@ class MethodChannelMapboxGl extends MapboxGlPlatform {
         '$defaultTargetPlatform is not yet supported by the maps plugin');
   }
 
+  /// MAXKO! ///
+  @override
+  Future<bool?> animateCamera(cameraUpdate, int duration) async {
+    return await _channel.invokeMethod('camera#animate', <String, dynamic>{
+      'cameraUpdate': cameraUpdate.toJson(),
+      'duration': duration,
+    });
+  }
+
+  @override
+  Future<void> changeLayerLanguage(String layerName, String language) async {
+    await _channel.invokeMethod('layer#changeLanguage', <String, dynamic>{
+      'language': language,
+      'layerName': layerName
+    });
+  }
+
+  @override
+  Future<void> setLayerVisibility(String layerName, bool visible) async {
+    return await _channel.invokeMethod('layer#setVisibility', <String, dynamic> {
+      'layerName': layerName,
+      'visible': visible,
+    });
+  }
+
+  @override
+  Future<bool> toggleAttributionVisibility(bool visible) async {
+    return await _channel.invokeMethod('map#toggleAttributionVisibility',<String, bool>{
+      'visible': visible
+    });
+  }
+
+  @override
+  Future<void> toggleNavigationIcon(bool enabled) async {
+    await _channel.invokeMethod('map#toggleNavigationIcon', <String, dynamic>{
+      'enabled': enabled
+    });
+  }
+
+  @override
+  Future<bool> updateContentInsets(EdgeInsets insets, int? duration) async {
+    return await _channel.invokeMethod('map#updateContentInsets', <String, dynamic>{
+      'bounds': <String, double>{
+        'top': insets.top,
+        'left': insets.left,
+        'bottom': insets.bottom,
+        'right': insets.right,
+      },
+      'duration': duration
+    });
+  }
+
+  @override
+  Future<void> updateMyLocationRenderMode(
+      MyLocationRenderMode myLocationRenderMode) async {
+    await _channel
+        .invokeMethod('map#updateMyLocationRenderMode', <String, dynamic>{
+      'mode': myLocationRenderMode.index
+    });
+  }
+
+  @override
+  Future<String?> getlayer(String layerName) async {
+    return await _channel.invokeMethod('layer#getLayer',<String, dynamic>{
+      'layerName': layerName
+    });
+  }
+
+  @override
+  Future<void> changeLineLayerColor(String layerName, Color color) async {
+    return await _channel.invokeMethod('layer#changeLineColor', <String, dynamic>{
+      'layerName': layerName,
+      'color': '#${color.value.toRadixString(16)}'
+    });
+  }
+
+  @override
+  Future<double> getClusterExpansionZoom(String sourceId, String encodedCluster) async {
+    return await _channel.invokeMethod('cluster#getExpansionZoom', <String, dynamic> {
+      'sourceId': sourceId,
+      'cluster': encodedCluster
+    });
+  }
+
+  @override
+  Future<Map<String, dynamic>?> queryRentBikeClusters(Point clickedPoint, String sourceId, List<String> layerIds) async {
+    try {
+      final Map<dynamic, dynamic>? res =  await _channel.invokeMethod('cluster#queryRentBike', <String, dynamic> {
+        'x': clickedPoint.x,
+        'y': clickedPoint.y,
+        'layerIds': layerIds,
+        "sourceId": sourceId
+      });
+      return res == null ? null : res.map((key, value) => MapEntry(key, value));
+    } on PlatformException catch (e) {
+      return new Future.error(e);
+    }
+  }
+  /// MAXKO! ///
+
   @override
   Future<CameraPosition?> updateMapOptions(
       Map<String, dynamic> optionsUpdate) async {
@@ -206,13 +306,6 @@ class MethodChannelMapboxGl extends MapboxGlPlatform {
       },
     );
     return CameraPosition.fromMap(json);
-  }
-
-  @override
-  Future<bool?> animateCamera(cameraUpdate) async {
-    return await _channel.invokeMethod('camera#animate', <String, dynamic>{
-      'cameraUpdate': cameraUpdate.toJson(),
-    });
   }
 
   @override
@@ -234,19 +327,6 @@ class MethodChannelMapboxGl extends MapboxGlPlatform {
   @override
   Future<void> matchMapLanguageWithDeviceDefault() async {
     await _channel.invokeMethod('map#matchMapLanguageWithDeviceDefault');
-  }
-
-  @override
-  Future<void> updateContentInsets(EdgeInsets insets, bool animated) async {
-    await _channel.invokeMethod('map#updateContentInsets', <String, dynamic>{
-      'bounds': <String, double>{
-        'top': insets.top,
-        'left': insets.left,
-        'bottom': insets.bottom,
-        'right': insets.right,
-      },
-      'animated': animated,
-    });
   }
 
   @override
@@ -289,7 +369,7 @@ class MethodChannelMapboxGl extends MapboxGlPlatform {
 
   @override
   Future<List> queryRenderedFeaturesInRect(
-      Rect rect, List<String> layerIds, String? filter) async {
+      Rect rect, List<String> layerIds, List<Object>? filter) async {
     try {
       final Map<dynamic, dynamic> reply = await _channel.invokeMethod(
         'map#queryRenderedFeatures',
