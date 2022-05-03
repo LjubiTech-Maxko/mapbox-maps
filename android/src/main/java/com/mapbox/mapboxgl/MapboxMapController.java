@@ -728,7 +728,7 @@ final class MapboxMapController
         final List<Feature> features = mapboxMap.queryRenderedFeatures(pixel, layerIds);
         if(features.isEmpty()) {
           result.success(null);
-          return;
+          break;
         }
         Feature firstFeature = features.get(0);
         final boolean isClustered = firstFeature.properties().get("cluster") != null;
@@ -1367,7 +1367,8 @@ final class MapboxMapController
   public boolean onMapClick(@NonNull LatLng point) {
     PointF pointf = mapboxMap.getProjection().toScreenLocation(point);
     RectF rectF = new RectF(pointf.x - 10, pointf.y - 10, pointf.x + 10, pointf.y + 10);
-    Feature feature = firstFeatureOnLayers(rectF);
+    // Feature feature = firstFeatureOnLayers(rectF);
+    Feature feature = null;
     final Map<String, Object> arguments = new HashMap<>();
     arguments.put("x", pointf.x);
     arguments.put("y", pointf.y);
