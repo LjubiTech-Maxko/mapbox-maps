@@ -124,6 +124,7 @@ abstract class MapboxGlPlatform {
       String? sourceLayer,
       double? minzoom,
       double? maxzoom,
+      dynamic filter,
       required bool enableInteraction});
 
   Future<void> addLineLayer(
@@ -132,6 +133,7 @@ abstract class MapboxGlPlatform {
       String? sourceLayer,
       double? minzoom,
       double? maxzoom,
+      dynamic filter,
       required bool enableInteraction});
 
   Future<void> addCircleLayer(
@@ -140,6 +142,7 @@ abstract class MapboxGlPlatform {
       String? sourceLayer,
       double? minzoom,
       double? maxzoom,
+      dynamic filter,
       required bool enableInteraction});
 
   Future<void> addFillLayer(
@@ -148,6 +151,7 @@ abstract class MapboxGlPlatform {
       String? sourceLayer,
       double? minzoom,
       double? maxzoom,
+      dynamic filter,
       required bool enableInteraction});
 
   Future<void> addRasterLayer(
