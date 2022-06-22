@@ -46,7 +46,6 @@ abstract class MapboxGlPlatform {
   final onUserLocationUpdatedPlatform = ArgumentCallbacks<UserLocation>();
 
   /// MAXKO! ///
-  Future<bool?> animateCamera(CameraUpdate cameraUpdate, int duration);
   Future<void> changeLayerLanguage(String layerId, String language);
   Future<void> setLayerVisibility(String layerName, bool visible);
   Future<bool?> toggleAttributionVisibility(bool visible);
