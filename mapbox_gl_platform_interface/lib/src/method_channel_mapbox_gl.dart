@@ -200,6 +200,14 @@ class MethodChannelMapboxGl extends MapboxGlPlatform {
 
   /// MAXKO! ///
   @override
+  Future<bool?> animateCamera(cameraUpdate, int duration) async {
+    return await _channel.invokeMethod('camera#animate', <String, dynamic>{
+      'cameraUpdate': cameraUpdate.toJson(),
+      'duration': duration,
+    });
+  }
+
+  @override
   Future<void> changeLayerLanguage(String layerName, String language) async {
     await _channel.invokeMethod('layer#changeLanguage', <String, dynamic>{
       'language': language,

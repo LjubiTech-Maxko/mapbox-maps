@@ -247,6 +247,10 @@ class MapboxMapController extends ChangeNotifier {
   final MapboxGlPlatform _mapboxGlPlatform; //ignore: unused_field
 
   /// MAXKO ///
+  Future<bool?> animateCamera(CameraUpdate cameraUpdate, int duration) async {
+    return _mapboxGlPlatform.animateCamera(cameraUpdate, duration);
+  }
+
   Future<void> changeLayerLanguage(String layerName, String language) {
     return _mapboxGlPlatform.changeLayerLanguage(layerName, language);
   }
