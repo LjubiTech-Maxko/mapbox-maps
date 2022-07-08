@@ -274,7 +274,7 @@ class MapboxMapController extends ChangeNotifier {
   }
 
   Future<String?> getLayer(String layerName) async {
-    return await _mapboxGlPlatform.getlayer(layerName);
+    return await _mapboxGlPlatform.getLayer(layerName);
   }
 
   Future<void> changeLineLayerColor(String layerName, Color color) async {

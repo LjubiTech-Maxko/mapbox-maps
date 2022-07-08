@@ -53,7 +53,7 @@ abstract class MapboxGlPlatform {
   Future<void> toggleNavigationIcon(bool enabled);
   Future<bool?> updateContentInsets(EdgeInsets insets, int? duration);
   Future<void> updateMyLocationRenderMode(MyLocationRenderMode myLocationRenderMode);
-  Future<String?> getlayer(String layerName);
+  Future<String?> getLayer(String layerName);
   Future<void> changeLineLayerColor(String layerName, Color color);
   Future<double> getClusterExpansionZoom(String sourceId, String encodedCluster);
   Future<Map<String, dynamic>?> queryRentBikeClusters(Point clickedPoint, String sourceId, List<String> layerIds);
