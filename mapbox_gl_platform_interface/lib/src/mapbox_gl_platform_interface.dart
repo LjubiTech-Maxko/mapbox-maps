@@ -46,7 +46,6 @@ abstract class MapboxGlPlatform {
   final onUserLocationUpdatedPlatform = ArgumentCallbacks<UserLocation>();
 
   /// MAXKO! ///
-  Future<bool?> animateCamera(CameraUpdate cameraUpdate, int duration);
   Future<void> changeLayerLanguage(String layerId, String language);
   Future<void> setLayerVisibility(String layerName, bool visible);
   Future<bool?> toggleAttributionVisibility(bool visible);
@@ -65,11 +64,15 @@ abstract class MapboxGlPlatform {
       OnPlatformViewCreatedCallback onPlatformViewCreated,
       Set<Factory<OneSequenceGestureRecognizer>>? gestureRecognizers);
   Future<CameraPosition?> updateMapOptions(Map<String, dynamic> optionsUpdate);
+  Future<bool?> animateCamera(CameraUpdate cameraUpdate, {Duration? duration});
   Future<bool?> moveCamera(CameraUpdate cameraUpdate);
   Future<void> updateMyLocationTrackingMode(
       MyLocationTrackingMode myLocationTrackingMode);
 
   Future<void> matchMapLanguageWithDeviceDefault();
+
+  void resizeWebMap();
+  void forceResizeWebMap();
 
   Future<void> setMapLanguage(String language);
   Future<void> setTelemetryEnabled(bool enabled);

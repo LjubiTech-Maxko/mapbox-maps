@@ -247,10 +247,6 @@ class MapboxMapController extends ChangeNotifier {
   final MapboxGlPlatform _mapboxGlPlatform; //ignore: unused_field
 
   /// MAXKO ///
-  Future<bool?> animateCamera(CameraUpdate cameraUpdate, int duration) async {
-    return _mapboxGlPlatform.animateCamera(cameraUpdate, duration);
-  }
-
   Future<void> changeLayerLanguage(String layerName, String language) {
     return _mapboxGlPlatform.changeLayerLanguage(layerName, language);
   }
@@ -304,6 +300,34 @@ class MapboxMapController extends ChangeNotifier {
   Future<void> _updateMapOptions(Map<String, dynamic> optionsUpdate) async {
     _cameraPosition = await _mapboxGlPlatform.updateMapOptions(optionsUpdate);
     notifyListeners();
+  }
+
+  /// Triggers a resize event for the map on web (ignored on Android or iOS).
+  ///
+  /// Checks first if a resize is required or if it looks like it is already correctly resized.
+  /// If it looks good, the resize call will be skipped.
+  ///
+  /// To force resize map (without any checks) have a look at forceResizeWebMap()
+  void resizeWebMap() {
+    _mapboxGlPlatform.resizeWebMap();
+  }
+
+  /// Triggers a hard map resize event on web and does not check if it is required or not.
+  void forceResizeWebMap() {
+    _mapboxGlPlatform.forceResizeWebMap();
+  }
+
+  /// Starts an animated change of the map camera position.
+  ///
+  /// [duration] is the amount of time, that the transition animation should take.
+  ///
+  /// The returned [Future] completes after the change has been started on the
+  /// platform side.
+  /// It returns true if the camera was successfully moved and false if the movement was canceled.
+  /// Note: this currently always returns immediately with a value of null on iOS
+  Future<bool?> animateCamera(CameraUpdate cameraUpdate,
+      {Duration? duration}) async {
+    return _mapboxGlPlatform.animateCamera(cameraUpdate, duration: duration);
   }
 
   /// Instantaneously re-position the camera.

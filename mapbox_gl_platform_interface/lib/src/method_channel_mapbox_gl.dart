@@ -235,14 +235,6 @@ class MethodChannelMapboxGl extends MapboxGlPlatform {
 
   /// MAXKO! ///
   @override
-  Future<bool?> animateCamera(cameraUpdate, int duration) async {
-    return await _channel.invokeMethod('camera#animate', <String, dynamic>{
-      'cameraUpdate': cameraUpdate.toJson(),
-      'duration': duration,
-    });
-  }
-
-  @override
   Future<void> changeLayerLanguage(String layerName, String language) async {
     await _channel.invokeMethod('layer#changeLanguage', <String, dynamic>{
       'language': language,
@@ -343,6 +335,14 @@ class MethodChannelMapboxGl extends MapboxGlPlatform {
       },
     );
     return CameraPosition.fromMap(json);
+  }
+
+  @override
+  Future<bool?> animateCamera(cameraUpdate, {Duration? duration}) async {
+    return await _channel.invokeMethod('camera#animate', <String, dynamic>{
+      'cameraUpdate': cameraUpdate.toJson(),
+      'duration': duration?.inMilliseconds,
+    });
   }
 
   @override
@@ -793,4 +793,10 @@ class MethodChannelMapboxGl extends MapboxGlPlatform {
       'geojsonFeature': jsonEncode(geojsonFeature)
     });
   }
+
+  @override
+  void forceResizeWebMap() {}
+
+  @override
+  void resizeWebMap() {}
 }
