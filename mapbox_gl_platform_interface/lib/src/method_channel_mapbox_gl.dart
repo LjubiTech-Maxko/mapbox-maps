@@ -323,6 +323,17 @@ class MethodChannelMapboxGl extends MapboxGlPlatform {
       return new Future.error(e);
     }
   }
+
+  @override
+  Future<bool> setRoute(Map<String, dynamic> route) async {
+    try {
+      return await _channel.invokeMethod('route#set', {
+        'route': route,
+      });
+    } on PlatformException catch (e) {
+      return new Future.error(e);
+    }
+  }
   /// MAXKO! ///
 
   @override

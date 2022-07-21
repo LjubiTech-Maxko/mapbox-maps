@@ -93,6 +93,7 @@ import com.mapbox.mapboxsdk.location.LocationComponentActivationOptions;
 import com.mapbox.mapboxsdk.http.HttpLogger;
 import com.mapbox.mapboxsdk.style.layers.Property;
 import com.mapbox.mapboxsdk.style.layers.PropertyFactory;
+import com.mapbox.geojson.utils.PolylineUtils;
 import static com.mapbox.mapboxsdk.style.layers.Property.NONE;
 import static com.mapbox.mapboxsdk.style.layers.Property.VISIBLE;
 /// MAXKO! ///
@@ -334,6 +335,43 @@ final class MapboxMapController
     if(source == null)
       return -1;
     return (double) source.getClusterExpansionZoom(feature);
+  }
+
+  private boolean setRoute(HashMap<String, Object> route) {
+    final String routeSourceId = (String) route.get("routeSourceId");
+    final String routeLayerId = (String) route.get("routeLayerId");
+    final String casingSourceId = (String) route.get("casingSourceId");
+    final String casingLayerId = (String) route.get("casingLayerId");
+    final String pushingBikeSourceId = (String) route.get("pushingBikeSourceId");
+    final String pushingBikeLayerId = (String) route.get("pushingBikeLayerId");
+    final String belowLayerId = (String) route.get("belowLayerId");
+    final String routeSource = (String) route.get("routeSource");
+    final String pushingBikeSource = (String) route.get("pushingBikeSource");
+    final PropertyValue[] routeLayerProperties = LayerPropertyConverter.interpretLineLayerProperties(route.get("routeLayerProperties"));
+    final PropertyValue[] casingLayerProperties = LayerPropertyConverter.interpretLineLayerProperties(route.get("casingLayerProperties"));
+    final PropertyValue[] pushingBikeLayerProperties = LayerPropertyConverter.interpretLineLayerProperties(route.get("pushingBikeLayerProperties"));
+
+    final Layer existingRouteLayer = style.getLayer(routeLayerId);
+    if(existingRouteLayer == null) {
+      addGeoJsonSource(routeSourceId, routeSource);
+      addGeoJsonSource(pushingBikeSourceId, pushingBikeSource);
+      LineLayer routeLayer = new LineLayer(routeLayerId, routeSourceId);
+      LineLayer casingLayer = new LineLayer(casingLayerId, casingSourceId);
+      LineLayer pushingBikeLayer = new LineLayer(pushingBikeLayerId, pushingBikeSourceId);
+      routeLayer.setProperties(routeLayerProperties);
+      casingLayer.setProperties(casingLayerProperties);
+      pushingBikeLayer.setProperties(pushingBikeLayerProperties);
+      style.addLayerBelow(casingLayer, belowLayerId);
+      style.addLayerBelow(routeLayer, belowLayerId);
+      style.addLayerBelow(pushingBikeLayer, belowLayerId);
+    } else {
+      setGeoJsonSource(routeSourceId, routeSource);
+      setGeoJsonSource(pushingBikeSourceId, pushingBikeSource);
+    }
+
+    updateLocationComponentLayer();
+
+    return true;
   }
   /// MAXKO! ///
 
@@ -770,6 +808,12 @@ final class MapboxMapController
         reply.put("bikeIds", bikeIdsInt);
         reply.put("zoom", newZoom);
         result.success(reply);
+        break;
+      }
+      case "route#set": {
+        final HashMap<String, Object> route = call.argument("route");
+        final boolean res = setRoute(route);
+        result.success(res);
         break;
       }
       /// MAXKO! ///
