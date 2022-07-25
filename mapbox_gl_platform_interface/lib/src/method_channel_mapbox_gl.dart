@@ -251,13 +251,6 @@ class MethodChannelMapboxGl extends MapboxGlPlatform {
   }
 
   @override
-  Future<bool> toggleAttributionVisibility(bool visible) async {
-    return await _channel.invokeMethod('map#toggleAttributionVisibility',<String, bool>{
-      'visible': visible
-    });
-  }
-
-  @override
   Future<void> toggleNavigationIcon(bool enabled) async {
     await _channel.invokeMethod('map#toggleNavigationIcon', <String, dynamic>{
       'enabled': enabled

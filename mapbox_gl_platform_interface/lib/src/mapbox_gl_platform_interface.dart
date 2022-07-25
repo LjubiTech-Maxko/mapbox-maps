@@ -48,7 +48,6 @@ abstract class MapboxGlPlatform {
   /// MAXKO! ///
   Future<void> changeLayerLanguage(String layerId, String language);
   Future<void> setLayerVisibility(String layerName, bool visible);
-  Future<bool?> toggleAttributionVisibility(bool visible);
   Future<void> toggleNavigationIcon(bool enabled);
   Future<bool?> updateContentInsets(EdgeInsets insets, int? duration);
   Future<void> updateMyLocationRenderMode(MyLocationRenderMode myLocationRenderMode);

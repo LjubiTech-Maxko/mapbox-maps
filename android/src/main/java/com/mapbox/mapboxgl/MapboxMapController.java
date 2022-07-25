@@ -21,6 +21,7 @@ import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.lifecycle.DefaultLifecycleObserver;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleOwner;
@@ -85,13 +86,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /// MAXKO ///
 import android.graphics.Color;
 import com.mapbox.geojson.Point;
 import com.mapbox.mapboxsdk.location.LocationComponentActivationOptions;
 import com.mapbox.mapboxsdk.http.HttpLogger;
-import com.mapbox.mapboxsdk.style.layers.Property;
 import com.mapbox.mapboxsdk.style.layers.PropertyFactory;
 import com.mapbox.geojson.utils.PolylineUtils;
 import static com.mapbox.mapboxsdk.style.layers.Property.NONE;
@@ -140,8 +141,8 @@ final class MapboxMapController
   private LatLng dragOrigin;
   private LatLng dragPrevious;
 
-  private Set<String> interactiveFeatureLayerIds;
-  private Map<String, FeatureCollection> addedFeaturesByLayer;
+  private final Set<String> interactiveFeatureLayerIds;
+  private final Map<String, FeatureCollection> addedFeaturesByLayer;
 
   private LatLngBounds bounds = null;
   Style.OnStyleLoaded onStyleLoadedCallback =
@@ -311,6 +312,8 @@ final class MapboxMapController
               .pulseEnabled(false)
               .accuracyAlpha(0)
               .accuracyAnimationEnabled(false)
+              .trackingGesturesManagement(false)
+              .compassAnimationEnabled(true)
               .build();
     } else {
       customLocationComponentOptions = LocationComponentOptions.builder(context)
@@ -326,15 +329,15 @@ final class MapboxMapController
                     .build();
 
     locationComponent.activateLocationComponent(locationComponentActivationOptions);
+    locationComponent.setMaxAnimationFps(30);
     locationComponent.setLocationComponentEnabled(true);
-    locationComponent.setMaxAnimationFps(enabled ? 60 : 30);
   }
 
-  private double getClusterExpansionZoom(String sourceId, Feature feature) {
+  private int getClusterExpansionZoom(String sourceId, Feature feature) {
     final GeoJsonSource source = style.getSourceAs(sourceId);
     if(source == null)
       return -1;
-    return (double) source.getClusterExpansionZoom(feature);
+    return source.getClusterExpansionZoom(feature);
   }
 
   private boolean setRoute(HashMap<String, Object> route) {
@@ -345,15 +348,31 @@ final class MapboxMapController
     final String pushingBikeSourceId = (String) route.get("pushingBikeSourceId");
     final String pushingBikeLayerId = (String) route.get("pushingBikeLayerId");
     final String belowLayerId = (String) route.get("belowLayerId");
-    final String routeSource = (String) route.get("routeSource");
+    final String routePolyline = (String) route.get("routePolyline");
     final String pushingBikeSource = (String) route.get("pushingBikeSource");
     final PropertyValue[] routeLayerProperties = LayerPropertyConverter.interpretLineLayerProperties(route.get("routeLayerProperties"));
     final PropertyValue[] casingLayerProperties = LayerPropertyConverter.interpretLineLayerProperties(route.get("casingLayerProperties"));
     final PropertyValue[] pushingBikeLayerProperties = LayerPropertyConverter.interpretLineLayerProperties(route.get("pushingBikeLayerProperties"));
 
     final Layer existingRouteLayer = style.getLayer(routeLayerId);
+
+    final List<Point> decodedPolyline = PolylineUtils.decode(routePolyline, 5);
+    final String geoJsonFc = "{" +
+            "\"type\":\"FeatureCollection\"," +
+            "\"properties\":{}," +
+            "\"features\": [" +
+              "{" +
+                "\"type\": \"Feature\"," +
+                "\"properties\":{}," +
+                "\"geometry\":{" +
+                  "\"type\": \"LineString\"," +
+                  "\"coordinates\":" + decodedPolyline.stream().map(Point::coordinates).collect(Collectors.toList()) +
+                "}" +
+              "}" +
+            "]}";
+
     if(existingRouteLayer == null) {
-      addGeoJsonSource(routeSourceId, routeSource);
+      addGeoJsonSource(routeSourceId, geoJsonFc);
       addGeoJsonSource(pushingBikeSourceId, pushingBikeSource);
       LineLayer routeLayer = new LineLayer(routeLayerId, routeSourceId);
       LineLayer casingLayer = new LineLayer(casingLayerId, casingSourceId);
@@ -365,11 +384,9 @@ final class MapboxMapController
       style.addLayerBelow(routeLayer, belowLayerId);
       style.addLayerBelow(pushingBikeLayer, belowLayerId);
     } else {
-      setGeoJsonSource(routeSourceId, routeSource);
+      setGeoJsonSource(routeSourceId, geoJsonFc);
       setGeoJsonSource(pushingBikeSourceId, pushingBikeSource);
     }
-
-    updateLocationComponentLayer();
 
     return true;
   }
@@ -430,9 +447,8 @@ final class MapboxMapController
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       userLocation.put(
           "verticalAccuracy",
-          (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-              ? location.getVerticalAccuracyMeters()
-              : null);
+          location.getVerticalAccuracyMeters()
+      );
     }
     userLocation.put("timestamp", location.getTime());
 
@@ -612,8 +628,7 @@ final class MapboxMapController
   }
 
   private Expression parseFilter(String filter) {
-    JsonParser parser = new JsonParser();
-    JsonElement filterJsonElement = parser.parse(filter);
+    JsonElement filterJsonElement = JsonParser.parseString(filter);
     return filterJsonElement.isJsonNull() ? null : Expression.Converter.convert(filterJsonElement);
   }
 
@@ -720,12 +735,6 @@ final class MapboxMapController
           result.success(layer.getId());
         break;
       }
-      case "map#toggleAttributionVisibility": {
-        final boolean visible = call.argument("visible");
-        mapboxMap.getUiSettings().setAttributionEnabled(visible);
-        result.success(visible);
-        break;
-      }
       case "map#toggleNavigationIcon": {
         final boolean active = call.argument("enabled");
         toggleNavigationIcon(active);
@@ -764,8 +773,9 @@ final class MapboxMapController
       }
       case "cluster#getExpansionZoom": {
         final String sourceId = call.argument("sourceId");
-        Feature feature = Feature.fromJson(call.argument("cluster"));
-        final double expansionZoom = getClusterExpansionZoom(sourceId, feature);
+        final String cluster = call.argument("cluster");
+        final Feature feature = Feature.fromJson(cluster);
+        final int expansionZoom = getClusterExpansionZoom(sourceId, feature);
         if(expansionZoom == -1) {
           result.error("cluster#getExpansionZoom", "zoom == -1", null);
           return;
@@ -783,7 +793,7 @@ final class MapboxMapController
         final List<Feature> features = mapboxMap.queryRenderedFeatures(pixel, layerIds);
         if(features.isEmpty()) {
           result.success(null);
-          break;
+          return;
         }
         Feature firstFeature = features.get(0);
         final boolean isClustered = firstFeature.properties().get("cluster") != null;
@@ -791,7 +801,7 @@ final class MapboxMapController
         List<Integer> bikeIdsInt = new ArrayList<>();
         final double maxZoom = mapboxMap.getMaxZoomLevel();
         if(isClustered) {
-          final double expansionZoom = getClusterExpansionZoom(sourceId, firstFeature);
+          final int expansionZoom = getClusterExpansionZoom(sourceId, firstFeature);
           newZoom = Math.min(expansionZoom, maxZoom);
           if(expansionZoom >= maxZoom) {
             final String bikeIdsRaw = firstFeature.properties().get("bikeIds").getAsString();
@@ -1788,7 +1798,7 @@ final class MapboxMapController
           new LocationEngineCallback<LocationEngineResult>() {
             @Override
             public void onSuccess(LocationEngineResult result) {
-              onUserLocationUpdate(result.getLastLocation());
+              // onUserLocationUpdate(result.getLastLocation());
             }
 
             @Override
