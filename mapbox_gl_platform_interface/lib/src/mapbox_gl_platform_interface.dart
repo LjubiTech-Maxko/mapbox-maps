@@ -55,7 +55,8 @@ abstract class MapboxGlPlatform {
   Future<void> changeLineLayerColor(String layerName, Color color);
   Future<double> getClusterExpansionZoom(String sourceId, String encodedCluster);
   Future<Map<String, dynamic>?> queryRentBikeClusters(Point clickedPoint, String sourceId, List<String> layerIds);
-  Future<bool> setRoute(Map<String, dynamic> route);
+  Future<bool> setRoutes(List<Map<String, dynamic>> routes);
+  Future<void> clearRoutes(List<Map<String, String>> routeIds);
   /// MAXKO! ///
 
   Future<void> initPlatform(int id);

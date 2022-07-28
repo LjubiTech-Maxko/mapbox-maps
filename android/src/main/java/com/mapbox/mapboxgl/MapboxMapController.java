@@ -340,55 +340,91 @@ final class MapboxMapController
     return source.getClusterExpansionZoom(feature);
   }
 
-  private boolean setRoute(HashMap<String, Object> route) {
-    final String routeSourceId = (String) route.get("routeSourceId");
-    final String routeLayerId = (String) route.get("routeLayerId");
-    final String casingSourceId = (String) route.get("casingSourceId");
-    final String casingLayerId = (String) route.get("casingLayerId");
-    final String pushingBikeSourceId = (String) route.get("pushingBikeSourceId");
-    final String pushingBikeLayerId = (String) route.get("pushingBikeLayerId");
-    final String belowLayerId = (String) route.get("belowLayerId");
-    final String routePolyline = (String) route.get("routePolyline");
-    final String pushingBikeSource = (String) route.get("pushingBikeSource");
-    final PropertyValue[] routeLayerProperties = LayerPropertyConverter.interpretLineLayerProperties(route.get("routeLayerProperties"));
-    final PropertyValue[] casingLayerProperties = LayerPropertyConverter.interpretLineLayerProperties(route.get("casingLayerProperties"));
-    final PropertyValue[] pushingBikeLayerProperties = LayerPropertyConverter.interpretLineLayerProperties(route.get("pushingBikeLayerProperties"));
+  private boolean setRoutes(HashMap<String, Object>[] routes) {
+    String routeSourceId, routeLayerId, casingSourceId, casingLayerId,
+            pushingBikeSourceId, pushingBikeLayerId;
+    String routePolyline, pushingBikeSource, belowLayerId;
+    PropertyValue[] routeLayerProperties, casingLayerProperties, pushingBikeLayerProperties;
+    Layer existingRouteLayer;
+    LineLayer routeLayer, casingLayer, pushingBikeLayer;
+    List<Point> decodedPolyline;
+    String geoJsonFc;
+    Integer index;
+    HashMap<String, Object> route;
 
-    final Layer existingRouteLayer = style.getLayer(routeLayerId);
+    for(int i = routes.length - 1; i >= 0; i--) {
+      route = routes[i];
+      index = (Integer) route.get("index");
+      routeSourceId = (String) route.get("routeSourceId");
+      routeLayerId = (String) route.get("routeLayerId");
+      casingSourceId = (String) route.get("casingSourceId");
+      casingLayerId = (String) route.get("casingLayerId");
+      pushingBikeSourceId = (String) route.get("pushingBikeSourceId");
+      pushingBikeLayerId = (String) route.get("pushingBikeLayerId");
+      routePolyline = (String) route.get("routePolyline");
+      pushingBikeSource = (String) route.get("pushingBikeSource");
+      belowLayerId = (String) route.get("belowLayerId");
+      routeLayerProperties = LayerPropertyConverter.interpretLineLayerProperties(route.get("routeLayerProperties"));
+      casingLayerProperties = LayerPropertyConverter.interpretLineLayerProperties(route.get("casingLayerProperties"));
+      pushingBikeLayerProperties = LayerPropertyConverter.interpretLineLayerProperties(route.get("pushingBikeLayerProperties"));
 
-    final List<Point> decodedPolyline = PolylineUtils.decode(routePolyline, 5);
-    final String geoJsonFc = "{" +
-            "\"type\":\"FeatureCollection\"," +
-            "\"properties\":{}," +
-            "\"features\": [" +
-              "{" +
-                "\"type\": \"Feature\"," +
-                "\"properties\":{}," +
-                "\"geometry\":{" +
-                  "\"type\": \"LineString\"," +
-                  "\"coordinates\":" + decodedPolyline.stream().map(Point::coordinates).collect(Collectors.toList()) +
-                "}" +
+      existingRouteLayer = style.getLayer(routeLayerId);
+      decodedPolyline = PolylineUtils.decode(routePolyline, 5);
+      geoJsonFc = "{" +
+        "\"type\":\"FeatureCollection\"," +
+          "\"properties\":{}," +
+          "\"features\": [" +
+            "{" +
+              "\"type\": \"Feature\"," +
+              "\"properties\":{" +
+                "\"type\": \"route\"," +
+                "\"index\": " + index +
+              "}," +
+              "\"geometry\":{" +
+                "\"type\": \"LineString\"," +
+                "\"coordinates\":" + decodedPolyline.stream().map(Point::coordinates).collect(Collectors.toList()) +
               "}" +
-            "]}";
-
-    if(existingRouteLayer == null) {
-      addGeoJsonSource(routeSourceId, geoJsonFc);
-      addGeoJsonSource(pushingBikeSourceId, pushingBikeSource);
-      LineLayer routeLayer = new LineLayer(routeLayerId, routeSourceId);
-      LineLayer casingLayer = new LineLayer(casingLayerId, casingSourceId);
-      LineLayer pushingBikeLayer = new LineLayer(pushingBikeLayerId, pushingBikeSourceId);
-      routeLayer.setProperties(routeLayerProperties);
-      casingLayer.setProperties(casingLayerProperties);
-      pushingBikeLayer.setProperties(pushingBikeLayerProperties);
-      style.addLayerBelow(casingLayer, belowLayerId);
-      style.addLayerBelow(routeLayer, belowLayerId);
-      style.addLayerBelow(pushingBikeLayer, belowLayerId);
-    } else {
-      setGeoJsonSource(routeSourceId, geoJsonFc);
-      setGeoJsonSource(pushingBikeSourceId, pushingBikeSource);
+            "}" +
+          "]" +
+        "}";
+      if(existingRouteLayer == null) {
+        addGeoJsonSource(routeSourceId, geoJsonFc);
+        addGeoJsonSource(pushingBikeSourceId, pushingBikeSource);
+        routeLayer = new LineLayer(routeLayerId, routeSourceId);
+        casingLayer = new LineLayer(casingLayerId, casingSourceId);
+        pushingBikeLayer = new LineLayer(pushingBikeLayerId, pushingBikeSourceId);
+        routeLayer.setProperties(routeLayerProperties);
+        casingLayer.setProperties(casingLayerProperties);
+        pushingBikeLayer.setProperties(pushingBikeLayerProperties);
+        style.addLayerBelow(casingLayer, belowLayerId);
+        style.addLayerBelow(routeLayer, belowLayerId);
+        style.addLayerBelow(pushingBikeLayer, belowLayerId);
+      } else {
+        setGeoJsonSource(routeSourceId, geoJsonFc);
+        setGeoJsonSource(pushingBikeSourceId, pushingBikeSource);
+      }
     }
 
     return true;
+  }
+
+  private void clearRoutes(HashMap<String, String>[] routeIds) {
+    String layerId, sourceId, pushingBikeLayerId, pushingBikeSourceId, casingLayerId;
+    for(HashMap<String, String> ids: routeIds) {
+      layerId = ids.get("routeLayerId");
+      sourceId = ids.get("routeSourceId");
+      pushingBikeLayerId = ids.get("pushingBikeLayerId");
+      pushingBikeSourceId = ids.get("pushingBikeSourceId");
+      casingLayerId = ids.get("casingLayerId");
+      style.removeLayer(layerId);
+      style.removeLayer(casingLayerId);
+      style.removeLayer(pushingBikeLayerId);
+      interactiveFeatureLayerIds.remove(layerId);
+      interactiveFeatureLayerIds.remove(casingLayerId);
+      interactiveFeatureLayerIds.remove(pushingBikeLayerId);
+      style.removeSource(sourceId);
+      style.removeSource(pushingBikeSourceId);
+    }
   }
   /// MAXKO! ///
 
@@ -821,9 +857,16 @@ final class MapboxMapController
         break;
       }
       case "route#set": {
-        final HashMap<String, Object> route = call.argument("route");
-        final boolean res = setRoute(route);
+        final HashMap<String, Object>[] routes = ((List<HashMap<String, Object>>) call.argument("routes")).toArray(new HashMap[0]);
+        // final HashMap<String, Object> route = call.argument("route");
+        final boolean res = setRoutes(routes);
         result.success(res);
+        break;
+      }
+      case "route#clear": {
+        final HashMap<String, String>[] routeIds = ((List<HashMap<String, String>>) call.argument("routeIds")).toArray(new HashMap[0]);
+        clearRoutes(routeIds);
+        result.success(null);
         break;
       }
       /// MAXKO! ///

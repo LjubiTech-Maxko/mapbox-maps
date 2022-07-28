@@ -313,18 +313,29 @@ class MethodChannelMapboxGl extends MapboxGlPlatform {
       });
       return res == null ? null : res.map((key, value) => MapEntry(key, value));
     } on PlatformException catch (e) {
-      return new Future.error(e);
+      return Future.error(e);
     }
   }
 
   @override
-  Future<bool> setRoute(Map<String, dynamic> route) async {
+  Future<bool> setRoutes(List<Map<String, dynamic>> routes) async {
     try {
       return await _channel.invokeMethod('route#set', {
-        'route': route,
+        'routes': routes,
       });
     } on PlatformException catch (e) {
-      return new Future.error(e);
+      return Future.error(e);
+    }
+  }
+
+  @override
+  Future<void> clearRoutes(List<Map<String, String>> routeIds) async {
+    try {
+      return await _channel.invokeMethod('route#clear', {
+        'routeIds': routeIds
+      });
+    } on PlatformException catch (e) {
+      return Future.error(e);
     }
   }
   /// MAXKO! ///

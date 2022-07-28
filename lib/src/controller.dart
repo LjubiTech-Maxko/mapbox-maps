@@ -281,8 +281,12 @@ class MapboxMapController extends ChangeNotifier {
     return await _mapboxGlPlatform.getClusterExpansionZoom(sourceId, encodedCluster);
   }
 
-  Future<bool> setRoute(Map<String, dynamic> route) async {
-    return await _mapboxGlPlatform.setRoute(route);
+  Future<bool> setRoutes(List<Map<String, dynamic>> routes) async {
+    return await _mapboxGlPlatform.setRoutes(routes);
+  }
+
+  Future<void> clearRoutes(List<Map<String, String>> routeIds) async {
+    return await _mapboxGlPlatform.clearRoutes(routeIds);
   }
 
   /// returns {
