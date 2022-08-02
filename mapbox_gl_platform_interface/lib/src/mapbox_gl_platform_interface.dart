@@ -56,6 +56,7 @@ abstract class MapboxGlPlatform {
   Future<double> getClusterExpansionZoom(String sourceId, String encodedCluster);
   Future<Map<String, dynamic>?> queryRentBikeClusters(Point clickedPoint, String sourceId, List<String> layerIds);
   Future<bool> setRoutes(List<Map<String, dynamic>> routes);
+  Future<void> updateRoutePassed(Map<String, dynamic> properties);
   Future<void> clearRoutes(List<Map<String, String>> routeIds);
   /// MAXKO! ///
 

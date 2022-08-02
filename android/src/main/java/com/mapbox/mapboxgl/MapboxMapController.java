@@ -95,6 +95,7 @@ import com.mapbox.mapboxsdk.location.LocationComponentActivationOptions;
 import com.mapbox.mapboxsdk.http.HttpLogger;
 import com.mapbox.mapboxsdk.style.layers.PropertyFactory;
 import com.mapbox.geojson.utils.PolylineUtils;
+import com.mapbox.mapboxsdk.style.sources.GeoJsonOptions;
 import static com.mapbox.mapboxsdk.style.layers.Property.NONE;
 import static com.mapbox.mapboxsdk.style.layers.Property.VISIBLE;
 /// MAXKO! ///
@@ -367,6 +368,7 @@ final class MapboxMapController
       routeLayerProperties = LayerPropertyConverter.interpretLineLayerProperties(route.get("routeLayerProperties"));
       casingLayerProperties = LayerPropertyConverter.interpretLineLayerProperties(route.get("casingLayerProperties"));
       pushingBikeLayerProperties = LayerPropertyConverter.interpretLineLayerProperties(route.get("pushingBikeLayerProperties"));
+      GeoJsonOptions options = new GeoJsonOptions().withLineMetrics(true);
 
       existingRouteLayer = style.getLayer(routeLayerId);
       decodedPolyline = PolylineUtils.decode(routePolyline, 5);
@@ -388,8 +390,8 @@ final class MapboxMapController
           "]" +
         "}";
       if(existingRouteLayer == null) {
-        addGeoJsonSource(routeSourceId, geoJsonFc);
-        addGeoJsonSource(pushingBikeSourceId, pushingBikeSource);
+        addGeoJsonSource(routeSourceId, geoJsonFc, options);
+        addGeoJsonSource(pushingBikeSourceId, pushingBikeSource, options);
         routeLayer = new LineLayer(routeLayerId, routeSourceId);
         casingLayer = new LineLayer(casingLayerId, casingSourceId);
         pushingBikeLayer = new LineLayer(pushingBikeLayerId, pushingBikeSourceId);
@@ -406,6 +408,11 @@ final class MapboxMapController
     }
 
     return true;
+  }
+
+  private void updateRoutePassed(HashMap<String, Object> properties) {
+    PropertyValue[] routeLayerProperties = LayerPropertyConverter.interpretLineLayerProperties(properties.get("routeLayerProperties"));
+    style.getLayer((String) properties.get("routeLayerId")).setProperties(routeLayerProperties);
   }
 
   private void clearRoutes(HashMap<String, String>[] routeIds) {
@@ -496,6 +503,14 @@ final class MapboxMapController
   private void addGeoJsonSource(String sourceName, String source) {
     FeatureCollection featureCollection = FeatureCollection.fromJson(source);
     GeoJsonSource geoJsonSource = new GeoJsonSource(sourceName, featureCollection);
+    addedFeaturesByLayer.put(sourceName, featureCollection);
+
+    style.addSource(geoJsonSource);
+  }
+
+  private void addGeoJsonSource(String sourceName, String source, GeoJsonOptions options) {
+    FeatureCollection featureCollection = FeatureCollection.fromJson(source);
+    GeoJsonSource geoJsonSource = new GeoJsonSource(sourceName, featureCollection, options);
     addedFeaturesByLayer.put(sourceName, featureCollection);
 
     style.addSource(geoJsonSource);
@@ -861,6 +876,12 @@ final class MapboxMapController
         // final HashMap<String, Object> route = call.argument("route");
         final boolean res = setRoutes(routes);
         result.success(res);
+        break;
+      }
+      case "route#updatePassed": {
+        final HashMap<String, Object> properties = call.argument("properties");
+        updateRoutePassed(properties);
+        result.success(null);
         break;
       }
       case "route#clear": {

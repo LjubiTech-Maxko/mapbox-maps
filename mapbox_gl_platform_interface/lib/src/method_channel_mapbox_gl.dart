@@ -329,6 +329,17 @@ class MethodChannelMapboxGl extends MapboxGlPlatform {
   }
 
   @override
+  Future<void> updateRoutePassed(Map<String, dynamic> properties) async {
+    try {
+      return await _channel.invokeMethod('route#updatePassed', {
+        'properties': properties
+      });
+    } on PlatformException catch (e) {
+      return Future.error(e);
+    }
+  }
+
+  @override
   Future<void> clearRoutes(List<Map<String, String>> routeIds) async {
     try {
       return await _channel.invokeMethod('route#clear', {

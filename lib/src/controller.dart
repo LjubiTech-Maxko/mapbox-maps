@@ -285,6 +285,10 @@ class MapboxMapController extends ChangeNotifier {
     return await _mapboxGlPlatform.setRoutes(routes);
   }
 
+  Future<void> updateRoutePassed(Map<String, dynamic> properties) async {
+    return await _mapboxGlPlatform.updateRoutePassed(properties);
+  }
+
   Future<void> clearRoutes(List<Map<String, String>> routeIds) async {
     return await _mapboxGlPlatform.clearRoutes(routeIds);
   }
