@@ -277,6 +277,10 @@ class MapboxMapController extends ChangeNotifier {
     return await _mapboxGlPlatform.changeLineLayerColor(layerName, color);
   }
 
+  Future<void> changeLineLayerGradient(String layerName, Map<String, dynamic> gradientExpression) async {
+    return await _mapboxGlPlatform.changeLineLayerGradient(layerName, gradientExpression);
+  }
+
   Future<double> getClusterExpansionZoom(String sourceId, String encodedCluster) async {
     return await _mapboxGlPlatform.getClusterExpansionZoom(sourceId, encodedCluster);
   }
@@ -291,6 +295,14 @@ class MapboxMapController extends ChangeNotifier {
 
   Future<void> clearRoutes(List<Map<String, String>> routeIds) async {
     return await _mapboxGlPlatform.clearRoutes(routeIds);
+  }
+
+  Future<void> updatePrivateBikesForRent(List<Map<String, dynamic>> data) async {
+    return await _mapboxGlPlatform.updatePrivateBikesForRent(data);
+  }
+
+  Future<void> updatePublicRentStations() async {
+    return await _mapboxGlPlatform.updatePublicRentStations();
   }
 
   /// returns {

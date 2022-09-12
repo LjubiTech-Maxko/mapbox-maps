@@ -53,11 +53,14 @@ abstract class MapboxGlPlatform {
   Future<void> updateMyLocationRenderMode(MyLocationRenderMode myLocationRenderMode);
   Future<String?> getLayer(String layerName);
   Future<void> changeLineLayerColor(String layerName, Color color);
+  Future<void> changeLineLayerGradient(String layerName, Map<String, dynamic> gradientExpression);
   Future<double> getClusterExpansionZoom(String sourceId, String encodedCluster);
   Future<Map<String, dynamic>?> queryRentBikeClusters(Point clickedPoint, String sourceId, List<String> layerIds);
   Future<bool> setRoutes(List<Map<String, dynamic>> routes);
   Future<void> updateRoutePassed(Map<String, dynamic> properties);
   Future<void> clearRoutes(List<Map<String, String>> routeIds);
+  Future<void> updatePrivateBikesForRent(List<Map<String, dynamic>> data);
+  Future<void> updatePublicRentStations();
   /// MAXKO! ///
 
   Future<void> initPlatform(int id);

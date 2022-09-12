@@ -172,10 +172,12 @@ class MethodChannelMapboxGl extends MapboxGlPlatform {
       //       onPlatformViewCreated,
       //     );
       //
+      //     controller.create();
+      //
       //     return controller;
       //   },
       // );
-      /// working! flutter 2.15.0
+      /// working! flutter 2.10.5
       if (useHybridComposition) {
         return PlatformViewLink(
           viewType: 'plugins.flutter.io/mapbox_gl',
@@ -295,6 +297,14 @@ class MethodChannelMapboxGl extends MapboxGlPlatform {
   }
 
   @override
+  Future<void> changeLineLayerGradient(String layerName, Map<String, dynamic> gradientExpression) async {
+    return await _channel.invokeMethod('layer#changeLineGradient', <String, dynamic>{
+      'layerName': layerName,
+      'gradient': gradientExpression.map((key, value) => MapEntry<String, String>(key, jsonEncode(value))),
+    });
+  }
+
+  @override
   Future<double> getClusterExpansionZoom(String sourceId, String encodedCluster) async {
     return await _channel.invokeMethod('cluster#getExpansionZoom', <String, dynamic> {
       'sourceId': sourceId,
@@ -320,7 +330,7 @@ class MethodChannelMapboxGl extends MapboxGlPlatform {
   @override
   Future<bool> setRoutes(List<Map<String, dynamic>> routes) async {
     try {
-      return await _channel.invokeMethod('route#set', {
+      return await _channel.invokeMethod('route#set', <String, dynamic>{
         'routes': routes,
       });
     } on PlatformException catch (e) {
@@ -331,7 +341,7 @@ class MethodChannelMapboxGl extends MapboxGlPlatform {
   @override
   Future<void> updateRoutePassed(Map<String, dynamic> properties) async {
     try {
-      return await _channel.invokeMethod('route#updatePassed', {
+      return await _channel.invokeMethod('route#updatePassed', <String, dynamic>{
         'properties': properties
       });
     } on PlatformException catch (e) {
@@ -342,10 +352,30 @@ class MethodChannelMapboxGl extends MapboxGlPlatform {
   @override
   Future<void> clearRoutes(List<Map<String, String>> routeIds) async {
     try {
-      return await _channel.invokeMethod('route#clear', {
+      return await _channel.invokeMethod('route#clear', <String, dynamic>{
         'routeIds': routeIds
       });
     } on PlatformException catch (e) {
+      return Future.error(e);
+    }
+  }
+
+  @override
+  Future<void> updatePrivateBikesForRent(List<Map<String, dynamic>> data) async {
+    try {
+      return await _channel.invokeMethod('rent#updatePrivateBikes', data);
+    } on PlatformException catch(e) {
+      return Future.error(e);
+    }
+  }
+
+  @override
+  Future<void> updatePublicRentStations() async {
+    try {
+      return await _channel.invokeMethod('rent#updatePublicStations', <String, dynamic>{
+
+      });
+    } on PlatformException catch(e) {
       return Future.error(e);
     }
   }

@@ -342,12 +342,12 @@ final class MapboxMapController
   }
 
   private boolean setRoutes(HashMap<String, Object>[] routes) {
-    String routeSourceId, routeLayerId, casingSourceId, casingLayerId,
+    String routeSourceId, routeLayerId, casingSourceId, casingLayerId, passedRouteSourceId, passedRouteLayerId,
             pushingBikeSourceId, pushingBikeLayerId;
     String routePolyline, pushingBikeSource, belowLayerId;
-    PropertyValue[] routeLayerProperties, casingLayerProperties, pushingBikeLayerProperties;
+    PropertyValue[] routeLayerProperties, casingLayerProperties, passedRouteLayerProperties, pushingBikeLayerProperties;
     Layer existingRouteLayer;
-    LineLayer routeLayer, casingLayer, pushingBikeLayer;
+    LineLayer routeLayer, casingLayer, passedRouteLayer, pushingBikeLayer;
     List<Point> decodedPolyline;
     String geoJsonFc;
     Integer index;
@@ -360,6 +360,8 @@ final class MapboxMapController
       routeLayerId = (String) route.get("routeLayerId");
       casingSourceId = (String) route.get("casingSourceId");
       casingLayerId = (String) route.get("casingLayerId");
+      passedRouteSourceId = (String) route.get("passedRouteSourceId");
+      passedRouteLayerId = (String) route.get("passedRouteLayerId");
       pushingBikeSourceId = (String) route.get("pushingBikeSourceId");
       pushingBikeLayerId = (String) route.get("pushingBikeLayerId");
       routePolyline = (String) route.get("routePolyline");
@@ -367,6 +369,7 @@ final class MapboxMapController
       belowLayerId = (String) route.get("belowLayerId");
       routeLayerProperties = LayerPropertyConverter.interpretLineLayerProperties(route.get("routeLayerProperties"));
       casingLayerProperties = LayerPropertyConverter.interpretLineLayerProperties(route.get("casingLayerProperties"));
+      passedRouteLayerProperties = LayerPropertyConverter.interpretLineLayerProperties(route.get("passedRouteLayerProperties"));
       pushingBikeLayerProperties = LayerPropertyConverter.interpretLineLayerProperties(route.get("pushingBikeLayerProperties"));
       GeoJsonOptions options = new GeoJsonOptions().withLineMetrics(true);
 
@@ -394,11 +397,14 @@ final class MapboxMapController
         addGeoJsonSource(pushingBikeSourceId, pushingBikeSource, options);
         routeLayer = new LineLayer(routeLayerId, routeSourceId);
         casingLayer = new LineLayer(casingLayerId, casingSourceId);
+        passedRouteLayer = new LineLayer(passedRouteLayerId, passedRouteSourceId);
         pushingBikeLayer = new LineLayer(pushingBikeLayerId, pushingBikeSourceId);
         routeLayer.setProperties(routeLayerProperties);
         casingLayer.setProperties(casingLayerProperties);
+        passedRouteLayer.setProperties(passedRouteLayerProperties);
         pushingBikeLayer.setProperties(pushingBikeLayerProperties);
         style.addLayerBelow(casingLayer, belowLayerId);
+        style.addLayerBelow(passedRouteLayer, belowLayerId);
         style.addLayerBelow(routeLayer, belowLayerId);
         style.addLayerBelow(pushingBikeLayer, belowLayerId);
       } else {
@@ -416,23 +422,31 @@ final class MapboxMapController
   }
 
   private void clearRoutes(HashMap<String, String>[] routeIds) {
-    String layerId, sourceId, pushingBikeLayerId, pushingBikeSourceId, casingLayerId;
+    String layerId, sourceId, pushingBikeLayerId, pushingBikeSourceId, casingLayerId, passedRouteLayerId;
     for(HashMap<String, String> ids: routeIds) {
       layerId = ids.get("routeLayerId");
       sourceId = ids.get("routeSourceId");
       pushingBikeLayerId = ids.get("pushingBikeLayerId");
       pushingBikeSourceId = ids.get("pushingBikeSourceId");
       casingLayerId = ids.get("casingLayerId");
+      passedRouteLayerId = ids.get("passedRouteLayerId");
       style.removeLayer(layerId);
       style.removeLayer(casingLayerId);
       style.removeLayer(pushingBikeLayerId);
+      style.removeLayer(passedRouteLayerId);
       interactiveFeatureLayerIds.remove(layerId);
       interactiveFeatureLayerIds.remove(casingLayerId);
       interactiveFeatureLayerIds.remove(pushingBikeLayerId);
+      interactiveFeatureLayerIds.remove(passedRouteLayerId);
       style.removeSource(sourceId);
       style.removeSource(pushingBikeSourceId);
     }
   }
+
+  private void updatePrivateBikesForRent(ArrayList<HashMap<String, Object>> data) {
+
+  }
+
   /// MAXKO! ///
 
   private void updateLocationComponentLayer() {
@@ -818,7 +832,19 @@ final class MapboxMapController
         final String layerName = call.argument("layerName");
         final String color = call.argument("color");
         LineLayer layer = style.getLayerAs(layerName);
-        layer.setProperties(PropertyFactory.lineColor(Color.parseColor(color)));
+        PropertyValue updatedProperty = PropertyFactory.lineColor(Color.parseColor(color));
+        layer.setProperties(updatedProperty);
+        result.success(null);
+        break;
+      }
+      case "layer#changeLineGradient": {
+        final String layerName = call.argument("layerName");
+        final PropertyValue[] gradient =
+                LayerPropertyConverter.interpretLineLayerProperties(call.argument("gradient"));
+        final LineLayer layer = style.getLayerAs(layerName);
+        if(layer != null) {
+          layer.setProperties(gradient);
+        }
         result.success(null);
         break;
       }
@@ -888,6 +914,15 @@ final class MapboxMapController
         final HashMap<String, String>[] routeIds = ((List<HashMap<String, String>>) call.argument("routeIds")).toArray(new HashMap[0]);
         clearRoutes(routeIds);
         result.success(null);
+        break;
+      }
+      case "rent#updatePrivateBikes": {
+        final ArrayList<HashMap<String, Object>> data = ((ArrayList<HashMap<String, Object>>) call.argument("data"));
+        updatePrivateBikesForRent(data);
+        result.success(null);
+        break;
+      }
+      case "rent#updatePublicStations": {
         break;
       }
       /// MAXKO! ///
