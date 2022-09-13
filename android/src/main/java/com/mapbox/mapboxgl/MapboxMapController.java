@@ -364,13 +364,11 @@ final class MapboxMapController
       passedRouteLayerId = (String) route.get("passedRouteLayerId");
       pushingBikeSourceId = (String) route.get("pushingBikeSourceId");
       pushingBikeLayerId = (String) route.get("pushingBikeLayerId");
-      routePolyline = (String) route.get("routePolyline");
       pushingBikeSource = (String) route.get("pushingBikeSource");
+      routePolyline = (String) route.get("routePolyline");
       belowLayerId = (String) route.get("belowLayerId");
       routeLayerProperties = LayerPropertyConverter.interpretLineLayerProperties(route.get("routeLayerProperties"));
       casingLayerProperties = LayerPropertyConverter.interpretLineLayerProperties(route.get("casingLayerProperties"));
-      passedRouteLayerProperties = LayerPropertyConverter.interpretLineLayerProperties(route.get("passedRouteLayerProperties"));
-      pushingBikeLayerProperties = LayerPropertyConverter.interpretLineLayerProperties(route.get("pushingBikeLayerProperties"));
       GeoJsonOptions options = new GeoJsonOptions().withLineMetrics(true);
 
       existingRouteLayer = style.getLayer(routeLayerId);
@@ -394,22 +392,30 @@ final class MapboxMapController
         "}";
       if(existingRouteLayer == null) {
         addGeoJsonSource(routeSourceId, geoJsonFc, options);
-        addGeoJsonSource(pushingBikeSourceId, pushingBikeSource, options);
         routeLayer = new LineLayer(routeLayerId, routeSourceId);
         casingLayer = new LineLayer(casingLayerId, casingSourceId);
-        passedRouteLayer = new LineLayer(passedRouteLayerId, passedRouteSourceId);
-        pushingBikeLayer = new LineLayer(pushingBikeLayerId, pushingBikeSourceId);
         routeLayer.setProperties(routeLayerProperties);
         casingLayer.setProperties(casingLayerProperties);
-        passedRouteLayer.setProperties(passedRouteLayerProperties);
-        pushingBikeLayer.setProperties(pushingBikeLayerProperties);
         style.addLayerBelow(casingLayer, belowLayerId);
-        style.addLayerBelow(passedRouteLayer, belowLayerId);
+        if(passedRouteSourceId != null && passedRouteLayerId != null) {
+          passedRouteLayerProperties = LayerPropertyConverter.interpretLineLayerProperties(route.get("passedRouteLayerProperties"));
+          passedRouteLayer = new LineLayer(passedRouteLayerId, passedRouteSourceId);
+          passedRouteLayer.setProperties(passedRouteLayerProperties);
+          style.addLayerBelow(passedRouteLayer, belowLayerId);
+        }
         style.addLayerBelow(routeLayer, belowLayerId);
-        style.addLayerBelow(pushingBikeLayer, belowLayerId);
+        if(pushingBikeSourceId != null && pushingBikeLayerId != null && pushingBikeSource != null) {
+          addGeoJsonSource(pushingBikeSourceId, pushingBikeSource, options);
+          pushingBikeLayerProperties = LayerPropertyConverter.interpretLineLayerProperties(route.get("pushingBikeLayerProperties"));
+          pushingBikeLayer = new LineLayer(pushingBikeLayerId, pushingBikeSourceId);
+          pushingBikeLayer.setProperties(pushingBikeLayerProperties);
+          style.addLayerBelow(pushingBikeLayer, belowLayerId);
+        }
       } else {
         setGeoJsonSource(routeSourceId, geoJsonFc);
-        setGeoJsonSource(pushingBikeSourceId, pushingBikeSource);
+        if(pushingBikeSourceId != null && pushingBikeLayerId != null && pushingBikeSource != null) {
+          setGeoJsonSource(pushingBikeSourceId, pushingBikeSource);
+        }
       }
     }
 
