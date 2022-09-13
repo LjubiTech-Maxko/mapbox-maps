@@ -330,7 +330,7 @@ final class MapboxMapController
                     .build();
 
     locationComponent.activateLocationComponent(locationComponentActivationOptions);
-    locationComponent.setMaxAnimationFps(30);
+    locationComponent.setMaxAnimationFps(60);
     locationComponent.setLocationComponentEnabled(true);
   }
 
