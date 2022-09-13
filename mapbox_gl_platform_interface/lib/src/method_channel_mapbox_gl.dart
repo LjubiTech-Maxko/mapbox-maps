@@ -193,8 +193,7 @@ class MethodChannelMapboxGl extends MapboxGlPlatform {
             );
           },
           onCreatePlatformView: (PlatformViewCreationParams params) {
-            final SurfaceAndroidViewController controller =
-                PlatformViewsService.initSurfaceAndroidView(
+            final controller = WrappedPlatformViewsService.initAndroidView(
               id: params.id,
               viewType: 'plugins.flutter.io/mapbox_gl',
               layoutDirection: TextDirection.ltr,
@@ -214,7 +213,7 @@ class MethodChannelMapboxGl extends MapboxGlPlatform {
           },
         );
       } else {
-        return AndroidView(
+        return AndroidViewWithWrappedController(
           viewType: 'plugins.flutter.io/mapbox_gl',
           onPlatformViewCreated: onPlatformViewCreated,
           gestureRecognizers: gestureRecognizers,
