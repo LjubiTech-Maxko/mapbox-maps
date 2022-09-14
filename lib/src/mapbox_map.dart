@@ -56,7 +56,6 @@ class MapboxMap extends StatefulWidget {
       AnnotationType.circle,
     ],
   })  : assert(annotationOrder.length <= 4),
-        assert(annotationConsumeTapEvents.length > 0),
         super(key: key);
 
   /// Defines the layer order of annotations displayed on map
