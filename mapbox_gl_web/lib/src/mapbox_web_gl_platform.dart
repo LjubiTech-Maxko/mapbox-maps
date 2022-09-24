@@ -285,7 +285,7 @@ class MapboxWebGlPlatform extends MapboxGlPlatform
 
   @override
   Future<List> queryRenderedFeaturesInRect(
-      Rect rect, List<String> layerIds, String? filter) async {
+      Rect rect, List<String> layerIds, List<Object>? filter) async {
     Map<String, dynamic> options = {};
     if (layerIds.length > 0) {
       options['layers'] = layerIds;
@@ -958,7 +958,7 @@ class MapboxWebGlPlatform extends MapboxGlPlatform
   }
 
   @override
-  Future<void> updateContentInsets(EdgeInsets insets, bool animated) {
+  Future<bool?> updateContentInsets(EdgeInsets insets, int? duration) {
     // TODO: implement updateContentInsets
     throw UnimplementedError();
   }
@@ -992,4 +992,90 @@ class MapboxWebGlPlatform extends MapboxGlPlatform
   void forceResizeWebMap() {
     _map.resize();
   }
+
+  // MAXKO //
+  @override
+  Future<void> changeLayerLanguage(String layerId, String language) {
+    // TODO: implement changeLayerLanguage
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> changeLineLayerColor(String layerName, ui.Color color) {
+    // TODO: implement changeLineLayerColor
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> changeLineLayerGradient(String layerName, Map<String, dynamic> gradientExpression) {
+    // TODO: implement changeLineLayerGradient
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> clearRoutes(List<Map<String, String>> routeIds) {
+    // TODO: implement clearRoutes
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<double> getClusterExpansionZoom(String sourceId, String encodedCluster) {
+    // TODO: implement getClusterExpansionZoom
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<String?> getLayer(String layerName) {
+    // TODO: implement getLayer
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Map<String, dynamic>?> queryRentBikeClusters(Point<num> clickedPoint, String sourceId, List<String> layerIds) {
+    // TODO: implement queryRentBikeClusters
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> setLayerVisibility(String layerName, bool visible) {
+    // TODO: implement setLayerVisibility
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<bool> setRoutes(List<Map<String, dynamic>> routes) {
+    // TODO: implement setRoutes
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> toggleNavigationIcon(bool enabled) {
+    // TODO: implement toggleNavigationIcon
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> updateMyLocationRenderMode(MyLocationRenderMode myLocationRenderMode) {
+    // TODO: implement updateMyLocationRenderMode
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> updatePrivateBikesForRent(List<Map<String, dynamic>> data) {
+    // TODO: implement updatePrivateBikesForRent
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> updatePublicRentStations() {
+    // TODO: implement updatePublicRentStations
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<void> updateRoutePassed(Map<String, dynamic> properties) {
+    // TODO: implement updateRoutePassed
+    throw UnimplementedError();
+  }
+  // MAXKO! //
 }
