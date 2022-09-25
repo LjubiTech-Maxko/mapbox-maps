@@ -7,7 +7,7 @@ part of mapbox_gl;
 typedef void OnMapClickCallback(Point<double> point, LatLng coordinates);
 
 typedef void OnFeatureInteractionCallback(
-    dynamic id, Point<double> point, LatLng coordinates);
+    dynamic id, Point<double> point, LatLng coordinates, dynamic properties);
 
 typedef void OnFeatureDragnCallback(dynamic id,
     {required Point<double> point,
@@ -67,7 +67,7 @@ class MapboxMapController extends ChangeNotifier {
     _mapboxGlPlatform.onFeatureTappedPlatform.add((payload) {
       for (final fun
           in List<OnFeatureInteractionCallback>.from(onFeatureTapped)) {
-        fun(payload["id"], payload["point"], payload["latLng"]);
+        fun(payload["id"], payload["point"], payload["latLng"], payload['properties']);
       }
     });
 
