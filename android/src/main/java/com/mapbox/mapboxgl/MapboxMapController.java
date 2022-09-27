@@ -928,6 +928,10 @@ final class MapboxMapController
         result.success(null);
         break;
       }
+      case "map#dartDisposed": {
+        destroyMapViewIfNecessary();
+        break;
+      }
       case "rent#updatePublicStations": {
         break;
       }

@@ -379,6 +379,11 @@ class MethodChannelMapboxGl extends MapboxGlPlatform {
       return Future.error(e);
     }
   }
+
+  @override
+  Future<void> disposeMap() async {
+    _channel.invokeMethod('map#dartDisposed');
+  }
   /// MAXKO! ///
 
   @override

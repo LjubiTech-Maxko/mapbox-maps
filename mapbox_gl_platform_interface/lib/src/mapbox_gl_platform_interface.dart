@@ -61,6 +61,7 @@ abstract class MapboxGlPlatform {
   Future<void> clearRoutes(List<Map<String, String>> routeIds);
   Future<void> updatePrivateBikesForRent(List<Map<String, dynamic>> data);
   Future<void> updatePublicRentStations();
+  Future<void> disposeMap();
   /// MAXKO! ///
 
   Future<void> initPlatform(int id);
