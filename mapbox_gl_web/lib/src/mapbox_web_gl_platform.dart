@@ -1038,9 +1038,12 @@ class MapboxWebGlPlatform extends MapboxGlPlatform
   }
 
   @override
-  Future<void> setLayerVisibility(String layerName, bool visible) {
-    // TODO: implement setLayerVisibility
-    throw UnimplementedError();
+  Future<void> setLayerVisibility(String layerName, bool visible) async {
+    final layer = _map.getLayer(layerName);
+    if (layer != null) {
+      _map.setLayoutProperty(
+          layerName, 'visibility', visible ? 'visible' : 'none');
+    }
   }
 
   @override
